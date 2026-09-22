@@ -39,12 +39,11 @@
 //! Only a pushed arrival carries a passed claim; where Xmip fetched the
 //! Stream the token in play was Xmip's own.
 
+use identify::authorization::AUTHORIZATION;
 use identify::jwt::{self, Compact};
 use identify::{IdentifyError, Presented, StreamArrival, TransportIdentifier};
 use xcore::{Arriving, Mechanism};
 
-/// The property read by default: the HTTP `Authorization` header.
-pub const AUTHORIZATION: &str = "http.header.authorization";
 /// The evidence name carrying the issuer.
 pub const ISSUER: &str = "oidc.issuer";
 /// The evidence name carrying the audiences.
