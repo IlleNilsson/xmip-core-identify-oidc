@@ -40,6 +40,7 @@
 //! Stream the token in play was Xmip's own.
 
 use identify::authorization::AUTHORIZATION;
+use identify::evidence;
 use identify::jwt::{self, Compact};
 use identify::{IdentifyError, Presented, StreamArrival, TransportIdentifier};
 use xcore::{Arriving, Mechanism};
@@ -48,8 +49,6 @@ use xcore::{Arriving, Mechanism};
 pub const ISSUER: &str = "oidc.issuer";
 /// The evidence name carrying the audiences.
 pub const AUDIENCE: &str = "oidc.audience";
-/// The proof name the compact token rides under.
-pub const TOKEN_PROOF: &str = "oidc.token";
 
 /// Reads an ID token's subject and issuer.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -102,7 +101,7 @@ impl Oidc {
         if let Some(name) = compact.principal() {
             claim = claim.with_evidence(name.evidence(), name.to_string());
         }
-        Ok(claim.with_proof(TOKEN_PROOF, token))
+        Ok(claim.with_proof(evidence::OIDC_TOKEN, token))
     }
 }
 
@@ -128,18 +127,15 @@ impl TransportIdentifier for Oidc {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use base64::Engine;
-    use base64::engine::general_purpose::URL_SAFE_NO_PAD;
-    use identify::principal;
     use stream::Stream;
     use xcore::{Established, Layer, StreamId};
 
     fn token(claims: &str) -> String {
         format!(
             "{}.{}.{}",
-            URL_SAFE_NO_PAD.encode(r#"{"alg":"RS256","kid":"k1"}"#),
-            URL_SAFE_NO_PAD.encode(claims),
-            URL_SAFE_NO_PAD.encode(b"signature")
+            codec::base64::encode_url_unpadded(r#"{"alg":"RS256","kid":"k1"}"#.as_bytes()),
+            codec::base64::encode_url_unpadded(claims.as_bytes()),
+            codec::base64::encode_url_unpadded(b"signature")
         )
     }
 
@@ -177,7 +173,7 @@ mod tests {
                 (AUDIENCE.to_string(), "orders billing".to_string()),
             ]
         );
-        assert_eq!(claim.proof(TOKEN_PROOF), Some(minted.as_str()));
+        assert_eq!(claim.proof(evidence::OIDC_TOKEN), Some(minted.as_str()));
     }
 
     #[test]
@@ -269,14 +265,17 @@ mod tests {
         assert_eq!(claim.value, "248289761001", "the value stays the subject");
         assert_eq!(
             principals(&claim),
-            [(principal::USER, "Jane@partner-x.example")]
+            [(evidence::PRINCIPAL_USER, "Jane@partner-x.example")]
         );
 
         let claim = presented(concat!(
             r#"{"iss":"https://idp.example","sub":"248289761001","#,
             r#""preferred_username":"PARTNERX\\jane"}"#,
         ));
-        assert_eq!(principals(&claim), [(principal::USER, "jane@partnerx")]);
+        assert_eq!(
+            principals(&claim),
+            [(evidence::PRINCIPAL_USER, "jane@partnerx")]
+        );
     }
 
     #[test]
@@ -287,7 +286,10 @@ mod tests {
         ));
         assert_eq!(
             principals(&claim),
-            [(principal::SERVICE, "HTTP/orders.example@example.com")]
+            [(
+                evidence::PRINCIPAL_SERVICE,
+                "HTTP/orders.example@example.com"
+            )]
         );
     }
 
