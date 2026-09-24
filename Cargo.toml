@@ -19,6 +19,8 @@ path = "src/lib.rs"
 # (identify::jwt, ADR-0044) — not the jwt sibling's; the mechanism is
 # xmip-core's.
 identify = { package = "xmip-core-identify", git = "https://github.com/IlleNilsson/xmip-core-identify", branch = "main" }
+# The names the transport writes on the arrival (context::property).
+context = { package = "xmip-core-context", git = "https://github.com/IlleNilsson/xmip-core-context", branch = "main" }
 xcore = { package = "xmip-core", git = "https://github.com/IlleNilsson/xmip-core", branch = "main" }
 
 [dev-dependencies]
