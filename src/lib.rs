@@ -207,7 +207,7 @@ mod tests {
     #[test]
     fn a_token_that_does_not_decode_is_an_error_naming_why() {
         let stream = stream();
-        let properties = authorization("Bearer aQ.b!!.aQ");
+        let properties = authorization("Bearer e30.b!!.aQ");
         let arrival = StreamArrival::new(&stream, Arriving::Pushed, "https://x/in", &properties);
 
         let failure = Oidc::bearer()
