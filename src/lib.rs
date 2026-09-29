@@ -196,7 +196,7 @@ mod tests {
     #[test]
     fn a_token_without_an_issuer_is_not_an_id_token_and_the_error_says_so() {
         let stream = stream();
-        let properties = authorization(&format!("Bearer {}", token(r#"{"sub":"partner-x"}"#)));
+        let properties = authorization(&format!("Bearer {}", token(r#"{"sub":"party-x"}"#)));
         let arrival = StreamArrival::new(&stream, Arriving::Pushed, "https://x/in", &properties);
 
         let failure = Oidc::bearer().identify(&arrival).expect_err("no issuer");
@@ -220,7 +220,7 @@ mod tests {
     #[test]
     fn a_configured_property_carries_the_bare_token() {
         let stream = stream();
-        let minted = token(r#"{"iss":"https://idp.example","sub":"partner-x","aud":"orders"}"#);
+        let minted = token(r#"{"iss":"https://idp.example","sub":"party-x","aud":"orders"}"#);
         let properties = [("http.form.id_token".to_string(), minted)];
         let arrival = StreamArrival::new(&stream, Arriving::Pushed, "https://x/in", &properties);
 
@@ -229,7 +229,7 @@ mod tests {
             .expect("read")
             .expect("a claim");
 
-        assert_eq!(claim.value, "partner-x");
+        assert_eq!(claim.value, "party-x");
         assert_eq!(
             claim.evidence[1],
             (AUDIENCE.to_string(), "orders".to_string())
@@ -260,21 +260,21 @@ mod tests {
     fn a_users_principal_name_is_written_beside_the_subject_in_canonical_form() {
         let claim = presented(concat!(
             r#"{"iss":"https://idp.example","sub":"248289761001","#,
-            r#""upn":"Jane@Partner-X.Example"}"#,
+            r#""upn":"Jane@Party-X.Example"}"#,
         ));
         assert_eq!(claim.value, "248289761001", "the value stays the subject");
         assert_eq!(
             principals(&claim),
-            [(evidence::PRINCIPAL_USER, "Jane@partner-x.example")]
+            [(evidence::PRINCIPAL_USER, "Jane@party-x.example")]
         );
 
         let claim = presented(concat!(
             r#"{"iss":"https://idp.example","sub":"248289761001","#,
-            r#""preferred_username":"PARTNERX\\jane"}"#,
+            r#""preferred_username":"PARTYX\\jane"}"#,
         ));
         assert_eq!(
             principals(&claim),
-            [(evidence::PRINCIPAL_USER, "jane@partnerx")]
+            [(evidence::PRINCIPAL_USER, "jane@partyx")]
         );
     }
 
