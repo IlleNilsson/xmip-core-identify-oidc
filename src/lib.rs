@@ -127,8 +127,8 @@ impl TransportIdentifier for Oidc {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use stream::Stream;
-    use xcore::{Established, Layer, StreamId};
+
+    use xcore::{Established, Layer};
 
     fn token(claims: &str) -> String {
         format!(
@@ -139,23 +139,18 @@ mod tests {
         )
     }
 
-    fn stream() -> Stream {
-        Stream::new(StreamId::new(1), b"<order/>".to_vec(), None)
-    }
-
     fn authorization(value: &str) -> Vec<(String, String)> {
         vec![(HTTP_AUTHORIZATION.to_string(), value.to_string())]
     }
 
     #[test]
     fn an_id_token_is_presented_by_its_subject_with_issuer_and_audience_beside() {
-        let stream = stream();
         let minted = token(concat!(
             r#"{"iss":"https://idp.example","sub":"248289761001","#,
             r#""aud":["orders","billing"],"nonce":"n-0S6"}"#,
         ));
         let properties = authorization(&format!("Bearer {minted}"));
-        let arrival = StreamArrival::new(&stream, Arriving::Pushed, "https://x/in", &properties);
+        let arrival = StreamArrival::new(Arriving::Pushed, "https://x/in", &properties);
 
         let claim = Oidc::bearer()
             .identify(&arrival)
@@ -178,26 +173,23 @@ mod tests {
 
     #[test]
     fn an_opaque_bearer_token_presents_nothing() {
-        let stream = stream();
         let properties = authorization("Bearer 2YotnFZFEjr1zCsicMWpAA");
-        let arrival = StreamArrival::new(&stream, Arriving::Pushed, "https://x/in", &properties);
+        let arrival = StreamArrival::new(Arriving::Pushed, "https://x/in", &properties);
 
         assert!(Oidc::bearer().identify(&arrival).expect("read").is_none());
     }
 
     #[test]
     fn an_arrival_without_the_header_presents_nothing() {
-        let stream = stream();
-        let arrival = StreamArrival::new(&stream, Arriving::Pushed, "https://x/in", &[]);
+        let arrival = StreamArrival::new(Arriving::Pushed, "https://x/in", &[]);
 
         assert!(Oidc::bearer().identify(&arrival).expect("read").is_none());
     }
 
     #[test]
     fn a_token_without_an_issuer_is_not_an_id_token_and_the_error_says_so() {
-        let stream = stream();
         let properties = authorization(&format!("Bearer {}", token(r#"{"sub":"party-x"}"#)));
-        let arrival = StreamArrival::new(&stream, Arriving::Pushed, "https://x/in", &properties);
+        let arrival = StreamArrival::new(Arriving::Pushed, "https://x/in", &properties);
 
         let failure = Oidc::bearer().identify(&arrival).expect_err("no issuer");
 
@@ -206,9 +198,8 @@ mod tests {
 
     #[test]
     fn a_token_that_does_not_decode_is_an_error_naming_why() {
-        let stream = stream();
         let properties = authorization("Bearer e30.b!!.aQ");
-        let arrival = StreamArrival::new(&stream, Arriving::Pushed, "https://x/in", &properties);
+        let arrival = StreamArrival::new(Arriving::Pushed, "https://x/in", &properties);
 
         let failure = Oidc::bearer()
             .identify(&arrival)
@@ -219,10 +210,9 @@ mod tests {
 
     #[test]
     fn a_configured_property_carries_the_bare_token() {
-        let stream = stream();
         let minted = token(r#"{"iss":"https://idp.example","sub":"party-x","aud":"orders"}"#);
         let properties = [("http.form.id_token".to_string(), minted)];
-        let arrival = StreamArrival::new(&stream, Arriving::Pushed, "https://x/in", &properties);
+        let arrival = StreamArrival::new(Arriving::Pushed, "https://x/in", &properties);
 
         let claim = Oidc::in_property("http.form.id_token")
             .identify(&arrival)
@@ -237,9 +227,8 @@ mod tests {
     }
 
     fn presented(claims: &str) -> Presented {
-        let stream = stream();
         let properties = authorization(&format!("Bearer {}", token(claims)));
-        let arrival = StreamArrival::new(&stream, Arriving::Pushed, "https://x/in", &properties);
+        let arrival = StreamArrival::new(Arriving::Pushed, "https://x/in", &properties);
 
         Oidc::bearer()
             .identify(&arrival)
@@ -309,11 +298,9 @@ mod tests {
 
     #[test]
     fn a_scheduled_pickup_presents_nothing_because_the_token_was_xmips_own() {
-        let stream = stream();
         let minted = token(r#"{"iss":"https://idp.example","sub":"xmip"}"#);
         let properties = authorization(&format!("Bearer {minted}"));
-        let arrival =
-            StreamArrival::new(&stream, Arriving::Scheduled, "https://api/out", &properties);
+        let arrival = StreamArrival::new(Arriving::Scheduled, "https://api/out", &properties);
 
         assert!(Oidc::bearer().identify(&arrival).expect("read").is_none());
     }
