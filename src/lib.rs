@@ -41,8 +41,9 @@
 
 use context::property::HTTP_AUTHORIZATION;
 use identify::evidence;
-use identify::jwt::{self, Compact};
+use identify::jwt;
 use identify::{IdentifyError, Presented, StreamArrival, TransportIdentifier};
+use jose::jwt::Token;
 use xcore::{Arriving, Mechanism};
 
 /// The evidence name carrying the issuer.
@@ -81,24 +82,24 @@ impl Oidc {
     }
 
     fn present(&self, token: &str) -> Result<Presented, IdentifyError> {
-        let compact = Compact::parse(token)?;
-        let Some(issuer) = compact.claim("iss") else {
+        let read = Token::read(token)?;
+        let Some(issuer) = read.issuer() else {
             return Err(IdentifyError::new(
                 "the ID token names no issuer: no `iss` claim",
             ));
         };
-        let Some(subject) = compact.claim("sub") else {
+        let Some(subject) = read.subject() else {
             return Err(IdentifyError::new(
                 "the ID token names no subject: no `sub` claim",
             ));
         };
 
         let mut claim = Presented::passed(self.mechanism(), subject).with_evidence(ISSUER, issuer);
-        let audiences = compact.strings_claim("aud");
+        let audiences = read.audience();
         if !audiences.is_empty() {
             claim = claim.with_evidence(AUDIENCE, audiences.join(" "));
         }
-        if let Some(name) = compact.principal() {
+        if let Some(name) = jwt::principal(&read) {
             claim = claim.with_evidence(name.evidence(), name.to_string());
         }
         Ok(claim.with_proof(evidence::OIDC_TOKEN, token))
