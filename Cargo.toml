@@ -15,17 +15,17 @@ path = "src/lib.rs"
 # (repository-model.md). The token a property carries and the principal its
 # claims name are the capability's (identify::jwt, ADR-0044) — not the jwt
 # sibling's; the mechanism is xmip-core's.
-identify = { package = "xmip-core-identify", git = "https://github.com/IlleNilsson/xmip-core-identify", branch = "main" }
+identify = { workspace = true }
 # The token itself, read as the estate's one JOSE reads it (jose::jwt), the
 # same read the second gate verifies.
-jose = { package = "xmip-core-library-jose", git = "https://github.com/IlleNilsson/xmip-core-library-jose", branch = "main" }
+jose = { workspace = true }
 # The names the transport writes on the arrival (context::property).
-context = { package = "xmip-core-context", git = "https://github.com/IlleNilsson/xmip-core-context", branch = "main" }
-xcore = { package = "xmip-core", git = "https://github.com/IlleNilsson/xmip-core", branch = "main" }
+context = { workspace = true }
+xcore = { workspace = true }
 
 [dev-dependencies]
 # The estate's base64url, to mint tokens as an issuer would.
-codec = { package = "xmip-core-library-codec", git = "https://github.com/IlleNilsson/xmip-core-library-codec", branch = "main" }
+codec = { workspace = true }
 
 [lints]
 workspace = true
